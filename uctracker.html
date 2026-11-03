@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tracker Perjalanan Dinas & Operasional</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        /* Hide scrollbars for clean app look */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                background-color: white;
+            }
+            .print-card {
+                box-shadow: none !important;
+                border: 1px solid #e2e8f0 !important;
+            }
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col items-center justify-start p-0 sm:p-4">
+
+    <!-- Main Container (Mobile App Frame) -->
+    <div class="w-full max-w-md bg-white min-h-screen sm:min-h-0 sm:rounded-3xl sm:shadow-xl sm:border sm:border-slate-100 flex flex-col justify-between overflow-hidden relative pb-10 sm:pb-6">
+        
+        <!-- Header -->
+        <header class="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-slate-100 px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-2xl bg-brand-500 text-white flex items-center justify-center font-bold text-lg shadow-md shadow-brand-500/20">
+                    <i class="fa-solid fa-wallet"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-sm text-slate-800 leading-tight">Tracker Operasional</h1>
+                    <p class="text-xs text-slate-400 font-medium">Perjalanan Dinas</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <!-- Tombol Save Eksplisit di Header -->
+                <button onclick="manualSaveData()" title="Simpan Data" class="h-9 px-3 rounded-full bg-brand-50 hover:bg-brand-100 border border-brand-200 text-brand-700 font-semibold text-xs flex items-center gap-1.5 transition active:scale-95">
+                    <i class="fa-solid fa-floppy-disk text-brand-600"></i>
+                    <span class="hidden sm:inline">Simpan</span>
+                </button>
+                <button onclick="openCategoryModal()" title="Kelola Kategori" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition">
+                    <i class="fa-solid fa-tags text-sm"></i>
+                </button>
+                <button onclick="openMenuModal()" title="Pengaturan & Ekspor" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition">
+                    <i class="fa-solid fa-ellipsis-vertical text-sm"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content Scrollable Area -->
+        <main class="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+
+            <!-- Card Ringkasan Budget -->
+            <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-2xl p-5 shadow-lg shadow-slate-900/10 relative overflow-hidden print-card">
+                <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-white/5 rounded-full blur-xl pointer-events-none"></div>
+                
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <span id="displayPeriodName" class="font-medium text-xs text-slate-300">Dinas Perjalanan Nov 2026</span>
+                        <button onclick="openEditPeriodModal()" class="text-slate-400 hover:text-white transition text-xs">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </button>
+                    </div>
+                    <button onclick="openBudgetModal()" class="text-xs bg-white/10 hover:bg-white/20 text-slate-200 px-2.5 py-1 rounded-full font-medium transition flex items-center gap-1">
+                        <i class="fa-solid fa-pen text-[10px]"></i> Edit Budget
+                    </button>
+                </div>
+
+                <div class="mb-4">
+                    <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold mb-1">Total Budget Periode</p>
+                    <h2 id="displayTotalBudget" class="text-2xl font-bold tracking-tight text-white">Rp 0</h2>
+                </div>
+
+                <!-- Progress Bar Budget -->
+                <div class="space-y-1.5 mb-4">
+                    <div class="flex justify-between text-xs font-medium">
+                        <span class="text-slate-400">Penggunaan</span>
+                        <span id="displayBudgetPercent" class="text-emerald-400 font-semibold">0%</span>
+                    </div>
+                    <div class="w-full bg-slate-700/60 rounded-full h-2.5 overflow-hidden">
+                        <div id="displayProgressBar" class="bg-emerald-400 h-2.5 rounded-full transition-all duration-300 w-0"></div>
+                    </div>
+                </div>
+
+                <!-- Detail Pengeluaran vs Sisa -->
+                <div class="grid grid-cols-2 gap-3 pt-3 border-t border-slate-700/60">
+                    <div class="bg-slate-800/80 rounded-xl p-2.5 border border-slate-700/50">
+                        <p class="text-[10px] text-slate-400 uppercase font-semibold">Terpakai</p>
+                        <p id="displayTotalSpent" class="text-sm font-bold text-rose-400 mt-0.5">Rp 0</p>
+                    </div>
+                    <div class="bg-slate-800/80 rounded-xl p-2.5 border border-slate-700/50">
+                        <p class="text-[10px] text-slate-400 uppercase font-semibold">Sisa Budget</p>
+                        <p id="displayRemainingBudget" class="text-sm font-bold text-emerald-400 mt-0.5">Rp 0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Tambah Pengeluaran Baru -->
+            <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm space-y-3 no-print">
+                <h3 class="font-bold text-xs uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
+                    <i class="fa-solid fa-plus-circle text-brand-600"></i> Catat Pengeluaran Baru
+                </h3>
+
+                <form id="expenseForm" onsubmit="handleAddExpense(event)" class="space-y-3">
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-500 mb-1">Tanggal</label>
+                            <input type="date" id="expenseDate" required class="w-full text-xs font-medium bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-500 mb-1">Kategori</label>
+                            <select id="expenseCategory" required class="w-full text-xs font-medium bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
+                                <!-- Options auto populated -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-500 mb-1">Nominal (Rp)</label>
+                        <input type="text" id="expenseAmount" required placeholder="0" oninput="formatInputCurrency(this)" class="w-full text-sm font-bold bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-500 mb-1">Keterangan / Keperluan</label>
+                        <input type="text" id="expenseNote" required placeholder="Contoh: Tiket Pesawat, Makan Siang Client" class="w-full text-xs font-medium bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
+                    </div>
+
+                    <button type="submit" class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-2.5 rounded-xl text-xs transition shadow-md shadow-brand-600/20 active:scale-[0.99]">
+                        <i class="fa-solid fa-plus mr-1"></i> Tambahkan Transaksi
+                    </button>
+                </form>
+            </div>
+
+            <!-- Filter & Daftar Transaksi -->
+            <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                    <h3 class="font-bold text-xs uppercase text-slate-400 tracking-wider">
+                        Riwayat Transaksi
+                    </h3>
+                    <select id="filterCategory" onchange="renderExpensesList()" class="text-xs bg-slate-100 font-semibold border-none rounded-lg px-2.5 py-1 text-slate-600 focus:outline-none">
+                        <option value="ALL">Semua Kategori</option>
+                        <!-- Options auto populated -->
+                    </select>
+                </div>
+
+                <!-- Expense List Container -->
+                <div id="expenseList" class="space-y-2 min-h-[120px]">
+                    <!-- Items rendered dynamically -->
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toastNotification" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-xs font-semibold px-4 py-2.5 rounded-full shadow-lg flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-300 z-50">
+        <i class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
+        <span id="toastMessage">Pesan berhasil</span>
+    </div>
+
+    <!-- Modal Edit Budget -->
+    <div id="budgetModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-xs p-5 shadow-xl space-y-4">
+            <h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-coins text-amber-500"></i> Atur Total Budget Dinas
+            </h3>
+            <div>
+                <label class="block text-xs text-slate-500 font-semibold mb-1">Nominal Budget (Rp)</label>
+                <input type="text" id="modalBudgetAmount" oninput="formatInputCurrency(this)" class="w-full text-base font-bold bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500">
+            </div>
+            <div class="flex gap-2">
+                <button onclick="closeBudgetModal()" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs">Batal</button>
+                <button onclick="saveBudgetModal()" class="flex-1 py-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl text-xs">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Edit Period Name -->
+    <div id="periodModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-xs p-5 shadow-xl space-y-4">
+            <h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-calendar text-brand-600"></i> Ubah Nama Periode / Kegiatan
+            </h3>
+            <div>
+                <label class="block text-xs text-slate-500 font-semibold mb-1">Nama Periode</label>
+                <input type="text" id="modalPeriodInput" placeholder="Contoh: Perjalanan Dinas Bali Jan 2026" class="w-full text-xs font-semibold bg-slate-50 border border-slate-200 rounded-xl p-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500">
+            </div>
+            <div class="flex gap-2">
+                <button onclick="closePeriodModal()" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs">Batal</button>
+                <button onclick="savePeriodModal()" class="flex-1 py-2 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl text-xs">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Kelola Kategori -->
+    <div id="categoryModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-xs p-5 shadow-xl space-y-4 max-h-[85vh] flex flex-col">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                <h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-tags text-brand-600"></i> Kelola Kategori
+                </h3>
+                <button onclick="closeCategoryModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Form Tambah Kategori -->
+            <form onsubmit="handleAddCategory(event)" class="flex gap-2">
+                <input type="text" id="newCategoryInput" required placeholder="Kategori baru..." class="flex-1 text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500">
+                <button type="submit" class="bg-brand-600 text-white px-3 py-2 rounded-xl text-xs font-semibold hover:bg-brand-700">Tambah</button>
+            </form>
+
+            <!-- List Kategori -->
+            <div class="flex-1 overflow-y-auto space-y-1.5 pr-1" id="categoryListContainer">
+                <!-- Dynamic categories list -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Menu / Action Drawer -->
+    <div id="menuModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-40 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white rounded-t-3xl sm:rounded-2xl w-full max-w-xs p-5 shadow-xl space-y-3 animate-in slide-in-from-bottom">
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                <h3 class="font-bold text-sm text-slate-800">Menu & Pengaturan</h3>
+                <button onclick="closeMenuModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="space-y-2">
+                <!-- Option Simpan Manual di Menu -->
+                <button onclick="manualSaveData(); closeMenuModal();" class="w-full py-3 px-4 bg-brand-50 hover:bg-brand-100 border border-brand-200 text-brand-700 font-semibold text-xs rounded-xl flex items-center justify-between">
+                    <span class="flex items-center gap-2"><i class="fa-solid fa-floppy-disk text-brand-600 text-base"></i> Simpan Data Permanen</span>
+                    <i class="fa-solid fa-chevron-right text-brand-400"></i>
+                </button>
+                <button onclick="exportToCSV()" class="w-full py-3 px-4 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-semibold text-xs rounded-xl flex items-center justify-between">
+                    <span class="flex items-center gap-2"><i class="fa-solid fa-file-csv text-emerald-600 text-base"></i> Ekspor Data ke CSV</span>
+                    <i class="fa-solid fa-chevron-right text-slate-400"></i>
+                </button>
+                <button onclick="window.print(); closeMenuModal();" class="w-full py-3 px-4 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 font-semibold text-xs rounded-xl flex items-center justify-between">
+                    <span class="flex items-center gap-2"><i class="fa-solid fa-print text-sky-600 text-base"></i> Cetak Ringkasan / PDF</span>
+                    <i class="fa-solid fa-chevron-right text-slate-400"></i>
+                </button>
+                <button onclick="confirmResetData()" class="w-full py-3 px-4 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 font-semibold text-xs rounded-xl flex items-center justify-between">
+                    <span class="flex items-center gap-2"><i class="fa-solid fa-trash-arrow-up text-rose-500 text-base"></i> Reset/Hapus Semua Data</span>
+                    <i class="fa-solid fa-chevron-right text-rose-300"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        // Initial Default States
+        const DEFAULT_CATEGORIES = ['Transportasi', 'Akomodasi', 'Uang Makan', 'Uang Saku', 'Lain-lain'];
+        
+        let appData = {
+            periodName: 'Dinas Perjalanan Nov 2026',
+            totalBudget: 3000000,
+            categories: [...DEFAULT_CATEGORIES],
+            expenses: [
+                { id: '1', date: new Date().toISOString().split('T')[0], category: 'Transportasi', amount: 350000, note: 'Tiket Kereta PP' },
+                { id: '2', date: new Date().toISOString().split('T')[0], category: 'Akomodasi', amount: 850000, note: 'Hotel 2 Malam' }
+            ]
+        };
+
+        // --- Core App Initialization ---
+        document.addEventListener('DOMContentLoaded', function() {
+            loadFromLocalStorage();
+            setDefaultDate();
+            renderApp();
+        });
+
+        function setDefaultDate() {
+            const today = new Date().toISOString().split('T')[0];
+            const dateInput = document.getElementById('expenseDate');
+            if (dateInput && !dateInput.value) {
+                dateInput.value = today;
+            }
+        }
+
+        // --- LocalStorage Management ---
+        function saveToLocalStorage() {
+            try {
+                localStorage.setItem('dinas_budget_data', JSON.stringify(appData));
+            } catch (e) {
+                console.error("Gagal menyimpan ke LocalStorage", e);
+            }
+        }
+
+        function manualSaveData() {
+            saveToLocalStorage();
+            showToast('Data berhasil disimpan ke memori HP/Browser!');
+        }
+
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('dinas_budget_data');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    if (parsed && typeof parsed === 'object') {
+                        appData = parsed;
+                        if (!appData.categories || appData.categories.length === 0) {
+                            appData.categories = [...DEFAULT_CATEGORIES];
+                        }
+                    }
+                } catch (e) {
+                    console.error("Gagal membaca LocalStorage", e);
+                }
+            }
+        }
+
+        // --- Render UI Components ---
+        function renderApp() {
+            // Auto Save ke LocalStorage setiap ada update/render
+            saveToLocalStorage();
+
+            // Render Period Name & Budget
+            document.getElementById('displayPeriodName').innerText = appData.periodName;
+            document.getElementById('displayTotalBudget').innerText = formatRupiah(appData.totalBudget);
+
+            // Calculate Totals
+            const totalSpent = appData.expenses.reduce((acc, curr) => acc + curr.amount, 0);
+            const remaining = appData.totalBudget - totalSpent;
+            const percentage = appData.totalBudget > 0 ? Math.min(100, Math.round((totalSpent / appData.totalBudget) * 100)) : 0;
+
+            document.getElementById('displayTotalSpent').innerText = formatRupiah(totalSpent);
+            
+            const remainingElem = document.getElementById('displayRemainingBudget');
+            remainingElem.innerText = formatRupiah(remaining);
+            if (remaining < 0) {
+                remainingElem.className = 'text-sm font-bold text-rose-500 mt-0.5';
+            } else {
+                remainingElem.className = 'text-sm font-bold text-emerald-400 mt-0.5';
+            }
+
+            document.getElementById('displayBudgetPercent').innerText = percentage + '%';
+            
+            const progressBar = document.getElementById('displayProgressBar');
+            progressBar.style.width = percentage + '%';
+            if (percentage > 90) {
+                progressBar.className = 'bg-rose-500 h-2.5 rounded-full transition-all duration-300';
+            } else if (percentage > 70) {
+                progressBar.className = 'bg-amber-400 h-2.5 rounded-full transition-all duration-300';
+            } else {
+                progressBar.className = 'bg-emerald-400 h-2.5 rounded-full transition-all duration-300';
+            }
+
+            // Render Category Dropdowns
+            renderCategoryDropdowns();
+
+            // Render Expenses List
+            renderExpensesList();
+        }
+
+        function renderCategoryDropdowns() {
+            const selectCategory = document.getElementById('expenseCategory');
+            const filterCategory = document.getElementById('filterCategory');
+
+            const currentSelected = selectCategory.value;
+            const currentFilter = filterCategory.value;
+
+            selectCategory.innerHTML = appData.categories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+            filterCategory.innerHTML = `<option value="ALL">Semua Kategori</option>` + appData.categories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+
+            if (appData.categories.includes(currentSelected)) {
+                selectCategory.value = currentSelected;
+            }
+            if (currentFilter === 'ALL' || appData.categories.includes(currentFilter)) {
+                filterCategory.value = currentFilter;
+            } else {
+                filterCategory.value = 'ALL';
+            }
+        }
+
+        function renderExpensesList() {
+            const container = document.getElementById('expenseList');
+            const selectedFilter = document.getElementById('filterCategory').value;
+
+            let filteredExpenses = appData.expenses;
+            if (selectedFilter !== 'ALL') {
+                filteredExpenses = appData.expenses.filter(e => e.category === selectedFilter);
+            }
+
+            if (filteredExpenses.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-slate-400 bg-white rounded-2xl border border-dashed border-slate-200">
+                        <i class="fa-solid fa-receipt text-2xl mb-2 text-slate-300"></i>
+                        <p class="text-xs font-medium">Belum ada catatan transaksi</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Sort by date descending
+            filteredExpenses.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            container.innerHTML = filteredExpenses.map(item => `
+                <div class="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between gap-3 hover:border-slate-200 transition">
+                    <div class="flex items-center space-x-3 overflow-hidden">
+                        <div class="w-9 h-9 rounded-xl bg-slate-100 text-slate-600 flex-shrink-0 flex items-center justify-center text-xs">
+                            <i class="${getCategoryIcon(item.category)}"></i>
+                        </div>
+                        <div class="truncate">
+                            <h4 class="font-bold text-xs text-slate-800 truncate">${escapeHtml(item.note)}</h4>
+                            <div class="flex items-center gap-2 text-[10px] text-slate-400 font-medium">
+                                <span>${formatDate(item.date)}</span>
+                                <span>•</span>
+                                <span class="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded-md">${escapeHtml(item.category)}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-right flex-shrink-0 flex items-center gap-2">
+                        <span class="text-xs font-bold text-slate-800">${formatRupiah(item.amount)}</span>
+                        <button onclick="deleteExpense('${item.id}')" class="text-slate-300 hover:text-rose-500 p-1 transition no-print" title="Hapus">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderCategoryListModal() {
+            const container = document.getElementById('categoryListContainer');
+            container.innerHTML = appData.categories.map(cat => `
+                <div class="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl text-xs font-medium text-slate-700">
+                    <span class="flex items-center gap-2">
+                        <i class="${getCategoryIcon(cat)} text-slate-400"></i> ${escapeHtml(cat)}
+                    </span>
+                    <button onclick="handleDeleteCategory('${cat}')" class="text-slate-400 hover:text-rose-500 p-1">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // --- Actions / Handlers ---
+        function handleAddExpense(e) {
+            e.preventDefault();
+            const date = document.getElementById('expenseDate').value;
+            const category = document.getElementById('expenseCategory').value;
+            const rawAmount = document.getElementById('expenseAmount').value.replace(/[^0-9]/g, '');
+            const note = document.getElementById('expenseNote').value;
+
+            if (!rawAmount || parseInt(rawAmount) <= 0) {
+                showToast('Masukkan nominal pengeluaran yang valid');
+                return;
+            }
+
+            const newExpense = {
+                id: Date.now().toString(),
+                date: date,
+                category: category,
+                amount: parseInt(rawAmount),
+                note: note
+            };
+
+            appData.expenses.push(newExpense);
+            
+            // Reset form
+            document.getElementById('expenseAmount').value = '';
+            document.getElementById('expenseNote').value = '';
+
+            renderApp();
+            showToast('Transaksi berhasil ditambahkan');
+        }
+
+        function deleteExpense(id) {
+            appData.expenses = appData.expenses.filter(item => item.id !== id);
+            renderApp();
+            showToast('Transaksi dihapus');
+        }
+
+        function handleAddCategory(e) {
+            e.preventDefault();
+            const input = document.getElementById('newCategoryInput');
+            const name = input.value.trim();
+
+            if (!name) return;
+            if (appData.categories.includes(name)) {
+                showToast('Kategori sudah ada');
+                return;
+            }
+
+            appData.categories.push(name);
+            input.value = '';
+            renderCategoryListModal();
+            renderApp();
+            showToast('Kategori ditambahkan');
+        }
+
+        function handleDeleteCategory(categoryName) {
+            if (appData.categories.length <= 1) {
+                showToast('Minimal harus ada 1 kategori');
+                return;
+            }
+            appData.categories = appData.categories.filter(c => c !== categoryName);
+            renderCategoryListModal();
+            renderApp();
+            showToast('Kategori dihapus');
+        }
+
+        // --- Modal Controllers ---
+        function openBudgetModal() {
+            document.getElementById('modalBudgetAmount').value = formatNumberWithCommas(appData.totalBudget);
+            document.getElementById('budgetModal').classList.remove('hidden');
+        }
+
+        function closeBudgetModal() {
+            document.getElementById('budgetModal').classList.add('hidden');
+        }
+
+        function saveBudgetModal() {
+            const rawVal = document.getElementById('modalBudgetAmount').value.replace(/[^0-9]/g, '');
+            appData.totalBudget = parseInt(rawVal) || 0;
+            closeBudgetModal();
+            renderApp();
+            showToast('Budget berhasil diperbarui');
+        }
+
+        function openEditPeriodModal() {
+            document.getElementById('modalPeriodInput').value = appData.periodName;
+            document.getElementById('periodModal').classList.remove('hidden');
+        }
+
+        function closePeriodModal() {
+            document.getElementById('periodModal').classList.add('hidden');
+        }
+
+        function savePeriodModal() {
+            const val = document.getElementById('modalPeriodInput').value.trim();
+            if (val) {
+                appData.periodName = val;
+                renderApp();
+                showToast('Nama periode diperbarui');
+            }
+            closePeriodModal();
+        }
+
+        function openCategoryModal() {
+            renderCategoryListModal();
+            document.getElementById('categoryModal').classList.remove('hidden');
+        }
+
+        function closeCategoryModal() {
+            document.getElementById('categoryModal').classList.add('hidden');
+        }
+
+        function openMenuModal() {
+            document.getElementById('menuModal').classList.remove('hidden');
+        }
+
+        function closeMenuModal() {
+            document.getElementById('menuModal').classList.add('hidden');
+        }
+
+        function confirmResetData() {
+            if (confirm('Apakah Anda yakin ingin menghapus seluruh data catatan untuk periode ini?')) {
+                appData.expenses = [];
+                appData.totalBudget = 0;
+                appData.categories = [...DEFAULT_CATEGORIES];
+                renderApp();
+                closeMenuModal();
+                showToast('Data berhasil di-reset');
+            }
+        }
+
+        // --- Utility Functions ---
+        function formatRupiah(number) {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(number);
+        }
+
+        function formatNumberWithCommas(val) {
+            return val.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        }
+
+        function formatInputCurrency(input) {
+            let value = input.value.replace(/[^0-9]/g, '');
+            if (value) {
+                input.value = formatNumberWithCommas(value);
+            } else {
+                input.value = '';
+            }
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.innerText = text;
+            return div.innerHTML;
+        }
+
+        function getCategoryIcon(cat) {
+            const lower = cat.toLowerCase();
+            if (lower.includes('trans') || lower.includes('pesawat') || lower.includes('bensin') || lower.includes('tak')) return 'fa-solid fa-car';
+            if (lower.includes('akomodasi') || lower.includes('hotel') || lower.includes('penginapan')) return 'fa-solid fa-hotel';
+            if (lower.includes('makan') || lower.includes('resto') || lower.includes('kuliner')) return 'fa-solid fa-utensils';
+            if (lower.includes('saku') || lower.includes('uang')) return 'fa-solid fa-hand-holding-dollar';
+            return 'fa-solid fa-receipt';
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toastNotification');
+            document.getElementById('toastMessage').innerText = message;
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 2500);
+        }
+
+        function exportToCSV() {
+            if (appData.expenses.length === 0) {
+                showToast('Tidak ada data untuk diekspor');
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Tanggal,Kategori,Nominal (IDR),Keterangan\n";
+
+            appData.expenses.forEach(item => {
+                const row = `"${item.date}","${item.category}","${item.amount}","${item.note.replace(/"/g, '""')}"`;
+                csvContent += row + "\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `laporan_dinas_${appData.periodName.replace(/\s+/g, '_')}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            closeMenuModal();
+            showToast('CSV berhasil diunduh');
+        }
+    </script>
+</body>
+</html>
